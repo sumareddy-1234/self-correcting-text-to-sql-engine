@@ -232,7 +232,7 @@ Run the evaluation script across 30 questions in `data/eval_set.json`:
 ```bash
 python scripts/evaluate.py
 ```
-*(Requires running PostgreSQL instance and `OPENAI_API_KEY` set in environment).*
+*(Requires running PostgreSQL instance and `GROQ_API_KEY` or `OPENAI_API_KEY` set in environment).*
 
 Generates metrics in `results/evaluation_metrics.json` comparing 3 configurations:
 1. `zero_shot`: Single SQL generation attempt without self-correction.
@@ -245,3 +245,36 @@ Generates metrics in `results/evaluation_metrics.json` comparing 3 configuration
 
 - Complex nested subquery Cartesian products may not be caught if row volume falls under 1000 rows.
 - Schema catalog DDL is injected directly into prompt context; extremely large enterprise schemas (>500 tables) require schema pruning / RAG retrieval prior to context injection.
+
+---
+
+## 14. Challenges Faced & Engineering Solutions
+
+During the implementation, benchmarking, and containerization of this engine, several engineering challenges were addressed:
+
+### 1. Semantic Over-Correction & False-Positive Regression
+- **Challenge**: Initial evaluation showed that naive semantic heuristics caused `full_pipeline` accuracy to fall below `zero_shot`. The empty-result heuristic aggressively flagged queries returning 0 rows even when 0 rows was the factually correct answer (e.g., querying for a non-existent region, threshold filters with no matches, or negation queries like customers with zero orders). Similarly, filtered aggregates returning `NULL` for missing items were falsely flagged.
+- **Solution**: Refined heuristics to be context-aware:
+  - Added pattern recognition for negation (`never`, `without`, `who have not`) and numerical thresholds (`more than \d+`, `at least`) to exempt legitimate empty sets.
+  - Restricted the `NULL` aggregate heuristic to only flag unfiltered queries (queries without a `WHERE` clause).
+  - Added state-aware case-sensitivity checks: if an empty-result entity query already uses `ILIKE`, the engine accepts it on attempt 2 rather than forcing an infinite retry loop.
+  - **Outcome**: Unnecessary semantic repairs dropped from 10 to 1, and full pipeline accuracy rose to 66.67%.
+
+### 2. AST Traversal for Read-Only Guardrails with CTE Support (`sqlglot`)
+- **Challenge**: Using simple root-node checks like `isinstance(ast, exp.Select)` broke valid Common Table Expressions (CTEs) because CTEs parse with an `exp.With` root node. Furthermore, cross-version AST expression class naming differences (such as `exp.Alter` vs `exp.AlterTable`) needed robust handling.
+- **Solution**: Implemented recursive AST traversal with `ast.walk()` to catch any destructive operation (`DROP`, `DELETE`, `UPDATE`, `INSERT`, `ALTER`, `TRUNCATE`, etc.) anywhere in the statement tree. For CTE queries (`exp.With`), the validator inspects the terminal expression (`ast.this`) to ensure it concludes in a read-only `exp.Select`.
+
+### 3. Comparing Result Sets with Nullable Values
+- **Challenge**: The evaluation harness compares actual database execution rows between generated and gold SQL rather than raw strings. In Python 3, sorting result rows containing `None` values (e.g. nullable `region`) raised `TypeError: '<' not supported between instances of 'str' and 'NoneType'`, crashing the batch runner.
+- **Solution**: Engineered a custom typed sorting comparator (`row_sort_key` / `value_sort_key`) that categorizes values into sortable priority tuples: `(0, "")` for `None`, `(1, float(v))` for numbers, and `(2, str(v))` for strings, alongside float rounding to 4 decimal places. The comparator also respects explicit `ORDER BY` clauses when present.
+
+### 4. Bounding the Orchestration Loop to Exactly 3 Total Attempts
+- **Challenge**: Agentic retry loops frequently suffer from attempt counting ambiguities (confusing 3 retries with 3 attempts, leading to 4 total calls) or generic "fix this" prompts that cause the model to repeat identical errors.
+- **Solution**: Built a deterministic state machine enforcing a strict hard limit of 3 total attempts (`effective_max_attempts = 3`). Maintained complete attempt history across iterations and routed failures to three distinct prompt templates containing specialized diagnostics: parser messages for syntax errors, catalog DDL for schema errors, and row previews for semantic suspicion.
+
+### 5. Docker Compose Environment Alignment (OpenAI to Groq)
+- **Challenge**: Aligning local development with Docker networking when migrating from OpenAI to Groq's OpenAI-compatible endpoint (`https://api.groq.com/openai/v1`). Inside Docker containers, the database hostname must be `db` rather than `localhost`, and environment variables like `GROQ_API_KEY` had to be passed cleanly without baking secrets into tracked compose manifests.
+- **Solution**:
+  - Implemented provider-agnostic initialization in `src/agent.py` that checks for `GROQ_API_KEY` and sets the OpenAI-compatible base URL.
+  - Configured dynamic parameter passthroughs in `docker-compose.yml` (`GROQ_API_KEY: ${GROQ_API_KEY}`) with PostgreSQL healthchecks to ensure the API container only starts once the database is fully seeded and ready.
+  - Maintained strict secret isolation with `.env` in `.gitignore` and template placeholders in `.env.example`.
