@@ -1,0 +1,182 @@
+[
+  {
+    "id": 1,
+    "question": "Show me all customers in New York.",
+    "difficulty": "easy",
+    "gold_sql": "SELECT * FROM customers WHERE region = 'New York';"
+  },
+  {
+    "id": 2,
+    "question": "List all customers from the West region.",
+    "difficulty": "easy",
+    "gold_sql": "SELECT * FROM customers WHERE region = 'West';"
+  },
+  {
+    "id": 3,
+    "question": "Find all customers whose region is not specified.",
+    "difficulty": "medium",
+    "gold_sql": "SELECT * FROM customers WHERE region IS NULL;"
+  },
+  {
+    "id": 4,
+    "question": "How many total customers are in the database?",
+    "difficulty": "easy",
+    "gold_sql": "SELECT COUNT(*) AS total_customers FROM customers;"
+  },
+  {
+    "id": 5,
+    "question": "List all unique customer regions.",
+    "difficulty": "easy",
+    "gold_sql": "SELECT DISTINCT region FROM customers;"
+  },
+  {
+    "id": 6,
+    "question": "Get the total number of orders placed.",
+    "difficulty": "easy",
+    "gold_sql": "SELECT COUNT(*) AS total_orders FROM orders;"
+  },
+  {
+    "id": 7,
+    "question": "What is the total revenue generated from all orders?",
+    "difficulty": "easy",
+    "gold_sql": "SELECT SUM(total_amount) AS total_revenue FROM orders;"
+  },
+  {
+    "id": 8,
+    "question": "What is the average order total?",
+    "difficulty": "easy",
+    "gold_sql": "SELECT AVG(total_amount) AS avg_order_total FROM orders;"
+  },
+  {
+    "id": 9,
+    "question": "List the top 5 customers by total spending.",
+    "difficulty": "hard",
+    "gold_sql": "SELECT c.customer_id, c.name, SUM(o.total_amount) AS total_spent FROM customers c JOIN orders o ON c.customer_id = o.cust_id GROUP BY c.customer_id, c.name ORDER BY total_spent DESC LIMIT 5;"
+  },
+  {
+    "id": 10,
+    "question": "Show all orders placed by customer named Alice Smith.",
+    "difficulty": "medium",
+    "gold_sql": "SELECT o.* FROM orders o JOIN customers c ON o.cust_id = c.customer_id WHERE c.name = 'Alice Smith';"
+  },
+  {
+    "id": 11,
+    "question": "List the 10 most recent orders.",
+    "difficulty": "easy",
+    "gold_sql": "SELECT * FROM orders ORDER BY order_date DESC LIMIT 10;"
+  },
+  {
+    "id": 12,
+    "question": "Find all orders placed in year 2024.",
+    "difficulty": "medium",
+    "gold_sql": "SELECT * FROM orders WHERE order_date >= '2024-01-01' AND order_date <= '2024-12-31';"
+  },
+  {
+    "id": 13,
+    "question": "List all products sold along with their total quantity sold.",
+    "difficulty": "medium",
+    "gold_sql": "SELECT product_name, SUM(qty) AS total_qty FROM line_items GROUP BY product_name ORDER BY total_qty DESC;"
+  },
+  {
+    "id": 14,
+    "question": "What is the most expensive product based on unit price?",
+    "difficulty": "easy",
+    "gold_sql": "SELECT product_name, unit_price FROM line_items ORDER BY unit_price DESC LIMIT 1;"
+  },
+  {
+    "id": 15,
+    "question": "Find the top 3 best-selling products by total revenue.",
+    "difficulty": "hard",
+    "gold_sql": "SELECT product_name, SUM(qty * unit_price) AS total_revenue FROM line_items GROUP BY product_name ORDER BY total_revenue DESC LIMIT 3;"
+  },
+  {
+    "id": 16,
+    "question": "Which customers have placed more than 5 orders?",
+    "difficulty": "hard",
+    "gold_sql": "SELECT c.customer_id, c.name, COUNT(o.id) AS order_count FROM customers c JOIN orders o ON c.customer_id = o.cust_id GROUP BY c.customer_id, c.name HAVING COUNT(o.id) > 5;"
+  },
+  {
+    "id": 17,
+    "question": "Show the total sales revenue by customer region.",
+    "difficulty": "medium",
+    "gold_sql": "SELECT c.region, SUM(o.total_amount) AS total_revenue FROM customers c JOIN orders o ON c.customer_id = o.cust_id GROUP BY c.region;"
+  },
+  {
+    "id": 18,
+    "question": "List all line items for order ID 10.",
+    "difficulty": "easy",
+    "gold_sql": "SELECT * FROM line_items WHERE order_id = 10;"
+  },
+  {
+    "id": 19,
+    "question": "What is the average price of products in line items?",
+    "difficulty": "easy",
+    "gold_sql": "SELECT AVG(unit_price) AS avg_unit_price FROM line_items;"
+  },
+  {
+    "id": 20,
+    "question": "Find all orders with a total amount greater than 500.",
+    "difficulty": "easy",
+    "gold_sql": "SELECT * FROM orders WHERE total_amount > 500;"
+  },
+  {
+    "id": 21,
+    "question": "Show all customers who have never placed an order.",
+    "difficulty": "hard",
+    "gold_sql": "SELECT c.* FROM customers c LEFT JOIN orders o ON c.customer_id = o.cust_id WHERE o.id IS NULL;"
+  },
+  {
+    "id": 22,
+    "question": "Count how many line items were ordered for each product.",
+    "difficulty": "medium",
+    "gold_sql": "SELECT product_name, COUNT(*) AS item_count FROM line_items GROUP BY product_name;"
+  },
+  {
+    "id": 23,
+    "question": "Get total revenue generated in the North region.",
+    "difficulty": "medium",
+    "gold_sql": "SELECT SUM(o.total_amount) AS north_revenue FROM customers c JOIN orders o ON c.customer_id = o.cust_id WHERE c.region = 'North';"
+  },
+  {
+    "id": 24,
+    "question": "List the names of customers who bought a 'Wireless Ergonomic Mouse'.",
+    "difficulty": "hard",
+    "gold_sql": "SELECT DISTINCT c.name FROM customers c JOIN orders o ON c.customer_id = o.cust_id JOIN line_items li ON o.id = li.order_id WHERE li.product_name = 'Wireless Ergonomic Mouse';"
+  },
+  {
+    "id": 25,
+    "question": "Find total quantity of 'Mechanical Gaming Keyboard' sold.",
+    "difficulty": "medium",
+    "gold_sql": "SELECT SUM(qty) AS total_quantity FROM line_items WHERE product_name = 'Mechanical Gaming Keyboard';"
+  },
+  {
+    "id": 26,
+    "question": "Show total spending for customer with customer_id 1.",
+    "difficulty": "medium",
+    "gold_sql": "SELECT SUM(total_amount) AS total_spent FROM orders WHERE cust_id = 1;"
+  },
+  {
+    "id": 27,
+    "question": "List customers in the East region sorted by name.",
+    "difficulty": "easy",
+    "gold_sql": "SELECT * FROM customers WHERE region = 'East' ORDER BY name ASC;"
+  },
+  {
+    "id": 28,
+    "question": "Find the order with the highest total amount.",
+    "difficulty": "easy",
+    "gold_sql": "SELECT * FROM orders ORDER BY total_amount DESC LIMIT 1;"
+  },
+  {
+    "id": 29,
+    "question": "Calculate the average quantity per line item.",
+    "difficulty": "easy",
+    "gold_sql": "SELECT AVG(qty) AS avg_quantity FROM line_items;"
+  },
+  {
+    "id": 30,
+    "question": "Show the total number of orders placed in each region.",
+    "difficulty": "medium",
+    "gold_sql": "SELECT c.region, COUNT(o.id) AS total_orders FROM customers c JOIN orders o ON c.customer_id = o.cust_id GROUP BY c.region;"
+  }
+]

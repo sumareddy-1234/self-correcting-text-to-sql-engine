@@ -1,0 +1,18 @@
+{
+  "configurations": {
+    "zero_shot": {
+      "accuracy_pct": 70.0,
+      "avg_iterations": 1.0
+    },
+    "syntax_schema_repair_only": {
+      "accuracy_pct": 73.33,
+      "avg_iterations": 1.0,
+      "total_schema_repairs": 0
+    },
+    "full_pipeline": {
+      "accuracy_pct": 66.67,
+      "avg_iterations": 1.03,
+      "total_semantic_repairs": 1
+    }
+  }
+}
